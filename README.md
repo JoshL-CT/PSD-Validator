@@ -51,6 +51,6 @@ Never commit credentials. `.env.local` is ignored by git.
 
 ## Notes
 
-* Uploaded and fixed files are stored in `.jobs/` on local disk. Swap `src/lib/storage.ts` for S3 or Blob before deploying.
+* Files go to `.jobs/` on local disk by default. When `BLOB_READ_WRITE_TOKEN` is set (a private Vercel Blob store connected to the project), the browser uploads straight to Blob and the app reads and writes there instead. Set the token before the build runs, because the build decides which upload path the page uses.
 * The NFL mark and fonts here are stand ins. Replace them with the approved brand assets.
 * The local engine keeps pixels and edits layer data, but open the result in Photoshop and check text boxes before using it in production.

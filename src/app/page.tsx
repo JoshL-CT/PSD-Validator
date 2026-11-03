@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { upload as uploadToBlob } from "@vercel/blob/client";
 import type { FixResult, Issue, JobRecord, Severity } from "@/lib/types";
 
 const ORDER: Severity[] = ["error", "warning", "info"];
@@ -30,9 +31,25 @@ export default function Home() {
     setResult(null);
     setBusy("upload");
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
+      let res: Response;
+      if (process.env.NEXT_PUBLIC_DIRECT_UPLOAD) {
+        // Hosted: send the file straight to private Blob storage, then check it.
+        const id = crypto.randomUUID();
+        await uploadToBlob(`jobs/${id}/original.psd`, file, {
+          access: "private",
+          handleUploadUrl: "/api/upload",
+          multipart: file.size > 50 * 1024 * 1024,
+        });
+        res = await fetch(`/api/jobs/${id}/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: file.name }),
+        });
+      } else {
+        const form = new FormData();
+        form.append("file", file);
+        res = await fetch("/api/upload", { method: "POST", body: form });
+      }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       const rec = data as JobRecord;
